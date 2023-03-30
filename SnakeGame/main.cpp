@@ -5,7 +5,12 @@ using namespace std;
 
 int main()
 {
-	Game* game = new Game();
-	game->Start();
+	Game* game;
+	do
+	{
+		game = new Game();
+		game->Start();
+	} while (game->OnGameOver());
+
 	delete game;
 }

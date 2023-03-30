@@ -6,9 +6,8 @@ using namespace std;
 class Game
 {
 public:
-	Game();
-	~Game();
 	void Start();
+	bool OnGameOver();
 private:
 
 	enum class Direction
@@ -16,19 +15,40 @@ private:
 		UP, DOWN, LEFT, RIGHT
 	};
 
+	enum class Color
+	{
+		BLACK,
+		DARK_BLUE,
+		DARK_GREEN,
+		DARK_SKYBLUE,
+		DARK_RED,
+		DARK_VOILET,
+		DAKR_YELLOW,
+		GRAY,
+		DARK_GRAY,
+		BLUE,
+		GREEN,
+		SKYBLUE,
+		RED,
+		VIOLET,
+		YELLOW,
+		WHITE
+	};
+
 	pair<int, int> snakePos;
-	unsigned int tailLength = 5;
+	unsigned int tailLength = 0;
 	Direction snakeDir = Direction::RIGHT;
 	list<pair<int, int>> snakeTails;
 
 	pair<int, int> applePos;
 
-	bool gameOver = false;
-
 	// 커서 숨기기
 	void HideCursor();
 	// 커서 이동
 	void MoveCursor(int x, int y);
+	// 출력 색상 변경
+	void SetColor(Color c);
+
 	// 게임 보드 주변의 벽 그리기
 	void DrawWall();
 	// 입력 받기
@@ -44,8 +64,10 @@ private:
 
 	void MoveSnake(int x, int y);
 
-	void IsGameOver();
+	bool IsGameOver();
 
-	void TryToEatApple();
+	void PlaceApple();
+
+	bool TryToEatApple();
 };
 

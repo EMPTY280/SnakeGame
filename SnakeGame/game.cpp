@@ -6,23 +6,19 @@
 
 #define BOARD_W 20		// 게임 보드의 가로 길이
 #define BOARD_H 20		// 게임 보드의 세로 길이
-#define UPDATE_MS 300	// 업데이트 간격 (ms)
+#define UPDATE_MS 200	// 업데이트 간격 (ms)
 
 using namespace std;
 
-Game::Game()
-{
-	snakePos = {BOARD_W * 0.5, BOARD_H * 0.5};
-}
-
-Game::~Game()
-{
-}
-
 void Game::Start()
 {
+	system("cls");
+
 	double prevTime = clock();
 	double updateDelay = 0;
+
+	snakePos = { BOARD_W * 0.5, BOARD_H * 0.5 };
+	PlaceApple();
 
 	HideCursor();
 	DrawWall();
@@ -40,6 +36,8 @@ void Game::Start()
 		if (updateDelay >= UPDATE_MS)
 		{
 			Update();
+			if (IsGameOver())
+				break;
 			updateDelay = 0;
 		}
 	}
@@ -58,8 +56,14 @@ void Game::MoveCursor(int x, int y)
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
+void Game::SetColor(Color c)
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (WORD)c);
+}
+
 void Game::DrawWall()
 {
+	SetColor(Color::BLUE);
 	for (int i = 1; i <= BOARD_W; i++)
 	{
 		MoveCursor(i, 0);
@@ -76,6 +80,7 @@ void Game::DrawWall()
 		cout << "■";
 	}
 
+	SetColor(Color::WHITE);
 	cout << endl << endl;
 }
 
@@ -105,21 +110,26 @@ void Game::Input()
 
 void Game::PreRender(bool eraseLastTail)
 {
-	MoveCursor(snakePos.first, snakePos.second);
+	MoveCursor(snakePos.first + 1, snakePos.second + 1);
 	cout << "  ";
 
-	if ((snakeTails.size() >= tailLength) && eraseLastTail)
+	if ((snakeTails.size() >= tailLength) && eraseLastTail && tailLength != 0)
 	{
 		pair<int, int> lastTail = snakeTails.back();
-		MoveCursor(lastTail.first, lastTail.second);
+		MoveCursor(lastTail.first + 1, lastTail.second + 1);
 		cout << "  ";
 	}
+
+	MoveCursor(applePos.first + 1, applePos.second + 1);
+	cout << "  ";
 
 	MoveCursor(0, 0);
 }
 
 void Game::Render(bool drawFirstTail)
 {
+	// 뱀 그리기
+	SetColor(Color::GREEN);
 	string headShape;
 	switch (snakeDir)
 	{
@@ -137,22 +147,31 @@ void Game::Render(bool drawFirstTail)
 		headShape = "▶";
 		break;
 	}
-	MoveCursor(snakePos.first, snakePos.second);
+	MoveCursor(snakePos.first + 1, snakePos.second + 1);
 	cout << headShape;
 
 	if ((snakeTails.size() > 0) && drawFirstTail)
 	{
 		pair<int, int> firstTail = snakeTails.front();
-		MoveCursor(firstTail.first, firstTail.second);
+		MoveCursor(firstTail.first + 1, firstTail.second + 1);
 		cout << "■";
 	}
 
-	MoveCursor(0, 0);
+	// 사과 그리기
+	SetColor(Color::RED);
+	MoveCursor(applePos.first + 1, applePos.second + 1);
+	cout << "●";
+	SetColor(Color::WHITE);
+
+	MoveCursor(0, BOARD_H + 3);
+
+	cout << "[ 조작법 ] : 방향키로 회전" << endl;
+	cout << "[ 점수 ] : " << tailLength << endl;
 }
 
 void Game::ChangeDirection(Direction dir)
 {
-	if (tailLength > 0)
+	if (snakeTails.size() > 0)
 	{
 		int xx = 0;
 		int yy = 0;
@@ -204,8 +223,10 @@ void Game::Update()
 		break;
 	}
 
-	Render();
+	if (TryToEatApple())
+		PlaceApple();
 
+	Render();
 }
 
 void Game::MoveSnake(int x, int y)
@@ -221,12 +242,67 @@ void Game::MoveSnake(int x, int y)
 	}
 }
 
-void Game::IsGameOver()
+bool Game::IsGameOver()
 {
+	if (snakePos.first < 0 ||
+		snakePos.first >= BOARD_W ||
+		snakePos.second < 0 ||
+		snakePos.second >= BOARD_H)
+		return true;
 
+	for (pair<int, int> pos : snakeTails)
+	{
+		if (snakePos == pos)
+			return true;
+	}
+
+	return false;
 }
 
-void Game::TryToEatApple()
+bool Game::OnGameOver()
 {
+	cout << "게임 끝! 다시 플레이합니까 ? (Y/N) : ";
+	char input;
+	cin >> input;
+	if (input == 'Y' || input == 'y')
+	{
+		cin.clear();
+		cin.ignore(255, '\n');
+		return true;
+	}
+	return false;
+}
 
+void Game::PlaceApple()
+{
+	bool repeat = true;
+
+	while (repeat)
+	{
+		applePos = make_pair(rand() % BOARD_W, rand() % BOARD_H);
+		repeat = false;
+
+		if (applePos == snakePos)
+			repeat = true;
+		for (pair<int, int> pos : snakeTails)
+		{
+			if (applePos == pos)
+			{
+				repeat = true;
+				break;
+			}
+		}
+	}
+}
+
+bool Game::TryToEatApple()
+{
+	if (snakePos == applePos)
+	{
+		tailLength++;
+		PlaceApple();
+		return true;
+	}
+
+	return false;
 }
