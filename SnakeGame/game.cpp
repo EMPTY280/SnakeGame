@@ -49,7 +49,6 @@ void Game::HideCursor()
 {
 	CONSOLE_CURSOR_INFO csrInfo = {0, };
 	csrInfo.dwSize = 1;
-	csrInfo.bVisible = FALSE;
 	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csrInfo);
 }
 
@@ -104,7 +103,7 @@ void Game::Input()
 	}
 }
 
-void Game::RenderBefore(bool eraseLastTail)
+void Game::PreRender(bool eraseLastTail)
 {
 	MoveCursor(snakePos.first, snakePos.second);
 	cout << "  ";
@@ -153,14 +152,40 @@ void Game::Render(bool drawFirstTail)
 
 void Game::ChangeDirection(Direction dir)
 {
-	RenderBefore(false);
-	snakeDir = dir;
+	if (tailLength > 0)
+	{
+		int xx = 0;
+		int yy = 0;
+
+		switch (dir)
+		{
+		case Game::Direction::UP:
+			yy = -1;
+			break;
+		case Game::Direction::DOWN:
+			yy = 1;
+			break;
+		case Game::Direction::LEFT:
+			xx = -1;
+			break;
+		case Game::Direction::RIGHT:
+		default:
+			xx = 1;
+			break;
+		}
+
+		if (snakePos.first + xx == snakeTails.front().first && snakePos.second + yy + snakeTails.front().second)
+			return;
+	}
+
+	PreRender(false);
+	this->snakeDir = dir;
 	Render(false);
 }
 
 void Game::Update()
 {
-	RenderBefore();
+	PreRender();
 
 	switch (snakeDir)
 	{
@@ -180,6 +205,7 @@ void Game::Update()
 	}
 
 	Render();
+
 }
 
 void Game::MoveSnake(int x, int y)
@@ -193,4 +219,14 @@ void Game::MoveSnake(int x, int y)
 	{
 		snakeTails.pop_back();
 	}
+}
+
+void Game::IsGameOver()
+{
+
+}
+
+void Game::TryToEatApple()
+{
+
 }
